@@ -22,6 +22,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "rotary_encoder.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,12 +52,8 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// Speed measurement variables
 extern uint32_t counter;
-extern int speed;
-extern int rpm;
-extern float scale_rpm ;
-int count = 0;
-uint32_t oldcounter = 0;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -188,14 +185,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-	count++;
-	if (count == 1000)
-	{
-	  speed = counter - oldcounter; // Tick per second
-	  rpm = (speed * 60/100)*scale_rpm; // Revolutions Per Minute
-	  oldcounter = counter;
-	  count = 0;
-	}
+  // SysTick is used for HAL timing, not for speed calculation anymore
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
@@ -267,5 +257,44 @@ void TIM2_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+
+/**
+  * @brief  Input Capture callback in non-blocking mode 
+  * @param  htim TIM IC handle
+  * @retval None
+  */
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM2) {
+    // This callback is called on each rising edge of the speed sensor
+    // The timer counter automatically increments, which is read by the speed sensor module
+    // No additional processing needed here
+  }
+}
+
+/**
+  * @brief EXTI line detection callbacks.
+  * @param GPIO_Pin Specifies the pins connected EXTI line
+  * @retval None
+  */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  switch(GPIO_Pin) {
+    case GPIO_PIN_0:
+      // Rotary encoder CLK pin - handled in RotaryEncoder_Update()
+      break;
+      
+    case GPIO_PIN_1:
+      // Speed sensor or other input
+      break;
+      
+    case GPIO_PIN_3:
+      // Rotary encoder SW pin - handled in RotaryEncoder_Update()
+      break;
+      
+    default:
+      break;
+  }
+}
 
 /* USER CODE END 1 */
